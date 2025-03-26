@@ -25,11 +25,41 @@ library(AppliedPredictiveModeling)
 ## Importing and Organizing Data
 ```{r data, echo = T, message = FALSE, results='hide', warning=FALSE}
 load("./data/dat1.RData") #importing training data
-training_data = dat1 #renaming the original training data name
+  # Log-transformed antibody level (log_antibody) --> y
+initial_training = dat1 #renaming the original training data name
 
 load("./data/dat2.RData") #importing training data
-test_data = dat2 #renaming the original training data name
+initial_test = dat2 #renaming the original training data name
+
+set.seed(2222)
+
+# partition data into training and validation data sets
+datSplit = initial_split(data = initial_training, prop = 0.8)
+training = training(datSplit)
+validation = testing(datSplit)
 ```
 
-getwd()
+```{r linear_regression, echo = T, message = FALSE, results='hide', warning=FALSE}
+model = lm(log_antibody ~ age + gender + race + smoking + height + weight + bmi + diabetes + 
+             hypertension + SBP + LDL + time, data = training)
 
+# View the model summary
+summary(model)
+```
+
+```{r prediction_linear_regression, echo = T, message = FALSE, results='hide', warning=FALSE}
+predictions_train = predict(model, newdata = training)
+
+# RMSE
+rmse_train = sqrt(mean((predictions_train - training$log_antibody)^2))
+rmse_train
+
+# R^2
+rsq_train = 1 - sum((predictions_train - training$log_antibody)^2) / 
+  sum((mean(training$log_antibody) - training$log_antibody)^2)
+rsq_train
+```
+
+Understand how demographic and clinical factors influence antibody responses
+
+Understand how antibody levels change over time following vaccination
