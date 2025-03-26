@@ -23,7 +23,7 @@ library(AppliedPredictiveModeling)
 ```
 
 ## Importing and Organizing Data
-```{r data, echo = T, message = FALSE, results='hide', warning=FALSE}
+```{r data, echo = T, message = FALSE, warning=FALSE}
 load("./data/dat1.RData") #importing training data
   # Log-transformed antibody level (log_antibody) --> y
 initial_training = dat1 #renaming the original training data name
@@ -40,7 +40,7 @@ validation = testing(datSplit)
 ```
 
 ## Linear Regression
-```{r linear_regression, echo = T, message = FALSE, results='hide', warning=FALSE}
+```{r linear_regression, echo = T, message = FALSE, warning=FALSE}
 model = lm(log_antibody ~ age + gender + race + smoking + height + weight + bmi + diabetes + 
              hypertension + SBP + LDL + time, data = training)
 
@@ -48,7 +48,7 @@ model = lm(log_antibody ~ age + gender + race + smoking + height + weight + bmi 
 summary(model)
 ```
 
-```{r prediction_linear_regression, echo = T, message = FALSE, results='hide', warning=FALSE}
+```{r prediction_linear_regression, echo = T, message = FALSE, warning=FALSE}
 predictions_train = predict(model, newdata = validation)
 
 # RMSE
@@ -61,7 +61,7 @@ rsq_train = 1 - sum((predictions_train - validation$log_antibody)^2) /
 rsq_train
 ```
 
-```{r testing, echo = T, message = FALSE, results='hide', warning=FALSE}
+```{r testing, echo = T, message = FALSE, warning=FALSE}
 generalization = predict(model, newdata = initial_test)
 
 # Calculate RMSE for dat2
@@ -74,7 +74,7 @@ rsq_dat2 = 1 - sum((generalization - initial_test$log_antibody)^2) /
 rsq_dat2
 ```
 
-```{r antibody_vs_vaccination, echo = T, message = FALSE, results='hide', warning=FALSE}
+```{r antibody_vs_vaccination, echo = T, message = FALSE, warning=FALSE}
 ggplot(initial_training, aes(x = time, y = log_antibody)) + 
   geom_point() + 
   geom_smooth(method = "lm", se = FALSE) + 
