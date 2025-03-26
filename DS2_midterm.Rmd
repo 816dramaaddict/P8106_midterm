@@ -39,6 +39,7 @@ training = training(datSplit)
 validation = testing(datSplit)
 ```
 
+## Linear Regression
 ```{r linear_regression, echo = T, message = FALSE, results='hide', warning=FALSE}
 model = lm(log_antibody ~ age + gender + race + smoking + height + weight + bmi + diabetes + 
              hypertension + SBP + LDL + time, data = training)
@@ -73,6 +74,9 @@ rsq_dat2 = 1 - sum((generalization - initial_test$log_antibody)^2) /
 rsq_dat2
 ```
 
-Understand how demographic and clinical factors influence antibody responses
-
-Understand how antibody levels change over time following vaccination
+```{r antibody_vs_vaccination, echo = T, message = FALSE, results='hide', warning=FALSE}
+ggplot(initial_training, aes(x = time, y = log_antibody)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(title = "Log Antibody Levels Over Time Since Vaccination")
+```
