@@ -2,7 +2,7 @@
 title: "Data Science II Midterm"
 author: "Megan Panier, Shiying Wu, and Rita Wang"
 date: "2025-03-25"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
