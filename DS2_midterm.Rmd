@@ -48,16 +48,29 @@ summary(model)
 ```
 
 ```{r prediction_linear_regression, echo = T, message = FALSE, results='hide', warning=FALSE}
-predictions_train = predict(model, newdata = training)
+predictions_train = predict(model, newdata = validation)
 
 # RMSE
-rmse_train = sqrt(mean((predictions_train - training$log_antibody)^2))
+rmse_train = sqrt(mean((predictions_train - validation$log_antibody)^2))
 rmse_train
 
 # R^2
-rsq_train = 1 - sum((predictions_train - training$log_antibody)^2) / 
-  sum((mean(training$log_antibody) - training$log_antibody)^2)
+rsq_train = 1 - sum((predictions_train - validation$log_antibody)^2) / 
+  sum((mean(training$log_antibody) - validation$log_antibody)^2)
 rsq_train
+```
+
+```{r testing, echo = T, message = FALSE, results='hide', warning=FALSE}
+generalization = predict(model, newdata = initial_test)
+
+# Calculate RMSE for dat2
+rmse_dat2 = sqrt(mean((generalization - initial_test$log_antibody)^2))
+rmse_dat2
+
+# Calculate R-squared for dat2
+rsq_dat2 = 1 - sum((generalization - initial_test$log_antibody)^2) / 
+  sum((mean(initial_test$log_antibody) - initial_test$log_antibody)^2)
+rsq_dat2
 ```
 
 Understand how demographic and clinical factors influence antibody responses
