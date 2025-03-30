@@ -113,8 +113,8 @@ barplot(table(initial_training$smoking),
 
 ## Linear Regression
 ```{r linear_regression, echo = T, message = FALSE, warning=FALSE}
-model = lm(log_antibody ~ age + gender + race + smoking + height + weight + bmi + diabetes + 
-             hypertension + SBP + LDL + time, data = training)
+model = lm(log_antibody ~ age + gender + race + smoking + bmi + diabetes + 
+             hypertension + LDL + time, data = training)
 
 # View the model summary
 summary(model)
@@ -173,7 +173,7 @@ gam_spec <- gen_additive_mod(
 ## Fitting the GAM
 gam_fit <- gam_spec %>%
   fit(log_antibody ~ s(age) + s(bmi) + s(time) + gender + race + smoking +
-        diabetes + hypertension + s(SBP) + s(LDL),
+        diabetes + hypertension + s(LDL),
       data = training)
 
 ## Predictions compared to the validation set 
@@ -223,7 +223,7 @@ mars_grid <- grid_regular(mars_grid_set, levels = c(20, 4))
 mars_workflow <- workflow() %>%
   add_model(mars_spec) %>%
   add_formula(log_antibody ~ age + gender + race + smoking +
-                bmi + diabetes + hypertension + SBP + LDL + time)
+                bmi + diabetes + hypertension + LDL + time)
 
 ## Hyperparameter Tuning
 set.seed(2222)
@@ -247,7 +247,7 @@ final_mars_spec <- mars_spec %>%
 ##Final MARS
 mars_fit <- fit(final_mars_spec,
                 formula = log_antibody ~ age + gender + race + smoking +
-                  bmi + diabetes + hypertension + SBP + LDL + time,
+                  bmi + diabetes + hypertension + LDL + time,
                 data = training)
 
 ## Extracting fitted MARS and Coefficients
