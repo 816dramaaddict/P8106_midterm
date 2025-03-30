@@ -194,7 +194,7 @@ plot(gam_fit$fit, pages = 1)
 gam_test_pred = predict(gam_fit, new_data = initial_test)$.pred
 # Calculating RMSE of the test data
 gam_test_error = mean((gam_test_pred - initial_test$log_antibody)^2)
-gam_test_error # 0.2879954
+gam_test_error # 0.287913
 ```
 
 ## MARS MODEL
