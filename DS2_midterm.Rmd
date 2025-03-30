@@ -190,6 +190,11 @@ summary(gam_fit$fit)
 #visual
 plot(gam_fit$fit, pages = 1)
 
+# Testing GAM model with the test data
+gam_test_pred = predict(gam_fit, new_data = initial_test)$.pred
+# Calculating RMSE of the test data
+gam_test_error = mean((gam_test_pred - initial_test$log_antibody)^2)
+gam_test_error # 0.2879954
 ```
 
 ## MARS MODEL
@@ -258,4 +263,9 @@ ggplot(pdp_plot, aes(x = time, y = yhat)) +
        y = "Log Antibody Levels") +
   theme_minimal()
 
+# Testing MARS model with the test data
+test.pred = predict(mars_fit, new_data = initial_test)
+# Calculating RMSE of the test data
+rmse = sqrt(mean((test.pred$.pred - initial_test$log_antibody)^2))
+rmse # 0.5276064
 ```
