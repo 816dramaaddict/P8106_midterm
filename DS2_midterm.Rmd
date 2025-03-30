@@ -8,6 +8,7 @@ output: pdf_document
 ## Libraries
 ```{r libraries, echo = T, message = FALSE, results='hide', warning=FALSE}
 library(readxl) # to import excel files
+library(corrplot)
 library(tidyverse)
 library(ggplot2)
 library(tidymodels)
@@ -38,6 +39,77 @@ datSplit = initial_split(data = initial_training, prop = 0.8)
 training = training(datSplit)
 validation = testing(datSplit)
 ```
+
+## Exploratory
+```{r Exploratory}
+Exploratory_train <- initial_training
+Exploratory_train$race <- as.numeric(Exploratory_train$race)
+Exploratory_train$smoking <- as.numeric(Exploratory_train$smoking)
+
+
+train_cor_matrix <- cor(Exploratory_train[, !names(Exploratory_train) %in% c("id")],use = "complete.obs")
+corrplot(train_cor_matrix, method = "circle")
+round(train_cor_matrix, 2)
+
+Exploratory_test <- initial_test
+Exploratory_test$race <- as.numeric(Exploratory_test$race)
+Exploratory_test$smoking <- as.numeric(Exploratory_test$smoking)
+str(Exploratory_test)
+test_cor_matrix <- cor(Exploratory_test[, !names(Exploratory_test) %in% c("id")],use = "complete.obs")
+round(test_cor_matrix, 2)
+corrplot(test_cor_matrix, method = "circle")
+
+ measurement<-data.frame(
+  Train_Mean = sapply(Exploratory_train, mean, na.rm = TRUE),
+  Test_Mean = sapply(Exploratory_test, mean, na.rm = TRUE),
+  Train_SD   = sapply(Exploratory_train, sd, na.rm = TRUE),
+  Test_SD   = sapply(Exploratory_test, sd, na.rm = TRUE),
+  Train_Min  = sapply(Exploratory_train, min, na.rm = TRUE),
+  Train_Max  = sapply(Exploratory_train, max, na.rm = TRUE),
+  Test_Min  = sapply(Exploratory_test, min, na.rm = TRUE),
+  Test_Max  = sapply(Exploratory_test, max, na.rm = TRUE))
+round(measurement, 2)
+train_vars <- initial_training[, !names(initial_training) %in% c("id", "race", "smoking")]
+test_vars  <- initial_test[, !names(initial_test) %in% c("id", "race", "smoking")]
+par(mfrow = c(2, 2))
+for (var in names(train_vars)) {
+  hist(test_vars[[var]],
+       main = paste("Test -", var),
+       xlab = var,
+       col = "lightcoral",
+       breaks = 20)
+  hist(train_vars[[var]],
+       main = paste("Train -", var),
+       xlab = var,
+       col = "lightblue",
+       breaks = 20)
+}
+
+barplot(table(initial_test$race),
+        main = "Test - Race",
+        col = "lightcoral",
+        xlab = "Race",
+        ylab = "Count")
+
+barplot(table(initial_training$race),
+        main = "Train - Race",
+        col = "lightblue",
+        xlab = "Race",
+        ylab = "Count")
+
+barplot(table(initial_test$smoking),
+        main = "Test - Smoking",
+        col = "lightcoral",
+        xlab = "Smoking Status",
+        ylab = "Count")
+
+barplot(table(initial_training$smoking),
+        main = "Train - Smoking",
+        col = "lightblue",
+        xlab = "Smoking Status",
+        ylab = "Count")
+```
+
 
 ## Linear Regression
 ```{r linear_regression, echo = T, message = FALSE, warning=FALSE}
