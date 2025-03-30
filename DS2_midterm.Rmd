@@ -8,19 +8,20 @@ output: pdf_document
 ## Libraries
 ```{r libraries, echo = T, message = FALSE, results='hide', warning=FALSE}
 library(readxl) # to import excel files
-library(corrplot)
 library(tidyverse)
+library(corrplot)
 library(ggplot2)
 library(tidymodels)
 library(glmnet)
 library(caret)
 library(splines)
 library(mgcv)
-library(earth)
 library(pROC)
-library(pdp)
 library(vip)
 library(AppliedPredictiveModeling)
+library(tidymodels)
+library(earth)
+library(pdp)
 ```
 
 ## Importing and Organizing Data
@@ -40,8 +41,8 @@ training = training(datSplit)
 validation = testing(datSplit)
 ```
 
-## Exploratory
-```{r Exploratory}
+## Exploratory Analysis
+```{r Exploratory, echo = T, message = FALSE, warning=FALSE}
 Exploratory_train <- initial_training
 Exploratory_train$race <- as.numeric(Exploratory_train$race)
 Exploratory_train$smoking <- as.numeric(Exploratory_train$smoking)
@@ -110,7 +111,6 @@ barplot(table(initial_training$smoking),
         ylab = "Count")
 ```
 
-
 ## Linear Regression
 ```{r linear_regression, echo = T, message = FALSE, warning=FALSE}
 model = lm(log_antibody ~ age + gender + race + smoking + height + weight + bmi + diabetes + 
@@ -151,4 +151,111 @@ ggplot(initial_training, aes(x = time, y = log_antibody)) +
   geom_point() + 
   geom_smooth(method = "lm", se = FALSE) + 
   labs(title = "Log Antibody Levels Over Time Since Vaccination")
+```
+
+## GAM MODEL
+```{r}
+#########################GAM MODEL#########################
+
+#converted some of the variables to factor for smoother flow
+training <- training %>% mutate(across(c(race, smoking, gender), as.factor))
+validation <- validation %>% mutate(across(c(race, smoking, gender), as.factor))
+dat2 <- dat2 %>% mutate(across(c(race, smoking, gender), as.factor))
+
+## GAM Model Specification
+gam_spec <- gen_additive_mod(
+  select_features = FALSE, 
+  adjust_deg_free = NULL   
+) %>%
+  set_mode("regression") %>%
+  set_engine("mgcv", method = "REML") 
+
+## Fitting the GAM
+gam_fit <- gam_spec %>%
+  fit(log_antibody ~ s(age) + s(bmi) + s(time) + gender + race + smoking +
+        diabetes + hypertension + s(SBP) + s(LDL),
+      data = training)
+
+## Predictions compared to the validation set 
+gam_preds <- predict(gam_fit, new_data = validation) %>%
+  bind_cols(validation)
+
+#rmse and rsq for performance eval
+gam_rmse <- rmse(gam_preds, truth = log_antibody, estimate = .pred)
+gam_rsq <- rsq(gam_preds, truth = log_antibody, estimate = .pred)
+
+#summary
+summary(gam_fit$fit)
+
+#visual
+plot(gam_fit$fit, pages = 1)
+
+```
+
+## MARS MODEL
+```{r, MARS model}
+###RESOLVE THIS BEFORE WE SUBMIT###
+## I did this in both of my parts --> if you guys are okay with it maybe we can do this in the data prep part earlier on in the file###
+
+training <- training %>% mutate(across(c(race, smoking, gender), as.factor))
+validation <- validation %>% mutate(across(c(race, smoking, gender), as.factor))
+dat2 <- dat2 %>% mutate(across(c(race, smoking, gender), as.factor))
+
+## Cross-Validation Setup
+set.seed(2222)
+cv_folds <- vfold_cv(training, v = 10)
+
+## MARS Model Specification
+mars_spec <- mars(num_terms = tune(), prod_degree = tune()) %>%
+  set_engine("earth") %>%
+  set_mode("regression")
+
+## Hyperparameter Grid
+mars_grid_set <- parameters(num_terms(range = c(2, 20)), prod_degree(range = c(1, 2)))
+mars_grid <- grid_regular(mars_grid_set, levels = c(20, 4))
+
+## setting up the workflow
+mars_workflow <- workflow() %>%
+  add_model(mars_spec) %>%
+  add_formula(log_antibody ~ age + gender + race + smoking +
+                bmi + diabetes + hypertension + SBP + LDL + time)
+
+## Hyperparameter Tuning
+set.seed(2222)
+mars_tune <- tune_grid(
+  mars_workflow,
+  resamples = cv_folds,
+  grid = mars_grid
+)
+
+# Visualizing the tuning results
+autoplot(mars_tune, metric = "rmse")
+
+# best hyperparameters Based on RMSE
+mars_best <- select_best(mars_tune, metric = "rmse")
+
+## Updated model using best tune
+final_mars_spec <- mars_spec %>%
+  update(num_terms = mars_best$num_terms,
+         prod_degree = mars_best$prod_degree)
+
+##Final MARS
+mars_fit <- fit(final_mars_spec,
+                formula = log_antibody ~ age + gender + race + smoking +
+                  bmi + diabetes + hypertension + SBP + LDL + time,
+                data = training)
+
+## Extracting fitted MARS and Coefficients
+mars_model <- extract_fit_engine(mars_fit)
+coef(mars_model)
+
+## Partial Dependence Plot for 'time'
+pdp_plot <- partial(mars_fit, pred.var = "time", grid.resolution = 50, train = training)
+ggplot(pdp_plot, aes(x = time, y = yhat)) +
+  geom_line(color = "blue", size = 1) +
+  labs(title = "Partial Dependence of Log Antibody Levels on Time Since Vaccination",
+       x = "Time Since Vaccination (days)",
+       y = "Log Antibody Levels") +
+  theme_minimal()
+
 ```

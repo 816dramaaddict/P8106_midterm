@@ -9,17 +9,19 @@ output: pdf_document
 ```{r libraries, echo = T, message = FALSE, results='hide', warning=FALSE}
 library(readxl) # to import excel files
 library(tidyverse)
+library(corrplot)
 library(ggplot2)
 library(tidymodels)
 library(glmnet)
 library(caret)
 library(splines)
 library(mgcv)
-library(earth)
 library(pROC)
-library(pdp)
 library(vip)
 library(AppliedPredictiveModeling)
+library(tidymodels)
+library(earth)
+library(pdp)
 ```
 
 ## Importing and Organizing Data
@@ -81,6 +83,7 @@ ggplot(initial_training, aes(x = time, y = log_antibody)) +
   labs(title = "Log Antibody Levels Over Time Since Vaccination")
 ```
 
+## GAM MODEL
 ```{r}
 #########################GAM MODEL#########################
 
@@ -119,12 +122,8 @@ plot(gam_fit$fit, pages = 1)
 
 ```
 
+## MARS MODEL
 ```{r, MARS model}
-## Libraries
-library(tidymodels)
-library(earth)
-library(pdp)
-
 ###RESOLVE THIS BEFORE WE SUBMIT###
 ## I did this in both of my parts --> if you guys are okay with it maybe we can do this in the data prep part earlier on in the file###
 
