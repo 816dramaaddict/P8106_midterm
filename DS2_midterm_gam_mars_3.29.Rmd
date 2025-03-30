@@ -120,6 +120,40 @@ summary(gam_fit$fit)
 #visual
 plot(gam_fit$fit, pages = 1)
 
+cv_folds <- vfold_cv(training, v = 10)
+fit_gam_fold <- function(split) {
+  train_data <- analysis(split)
+  val_data <- assessment(split)
+  
+  model <- gam(log_antibody ~ s(age) + s(bmi) + s(time) + gender + race + smoking +
+                 diabetes + hypertension + s(SBP) + s(LDL),
+               data = train_data, method = "REML")
+  
+  preds <- predict(model, newdata = val_data)
+  val_data$.pred <- preds
+  
+  metrics <- metric_set(rmse, rsq)(val_data, truth = log_antibody, estimate = .pred)
+  return(metrics)
+}
+cv_results <- map_dfr(cv_folds$splits, fit_gam_fold)
+
+cv_summary <- cv_results %>%
+  group_by(.metric) %>%
+  summarise(mean = mean(.estimate), sd = sd(.estimate))
+
+print(cv_summary)
+
+cv_model_results <- map2_dfr(cv_folds$splits, cv_folds$id, fit_gam_fold)
+
+# Find the best model (lowest RMSE)
+best_model_row <- cv_model_results %>%
+  arrange(rmse) %>%
+  slice(1)
+
+# Extract the model with the smallest RMSE
+best_model <- best_model_row$model[[1]]
+summary(best_model)
+best_model_rmse <- best_model_row$rmse
 ```
 
 ## MARS MODEL
