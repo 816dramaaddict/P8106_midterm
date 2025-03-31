@@ -152,49 +152,58 @@ ggplot(initial_training, aes(x = time, y = log_antibody)) +
   geom_smooth(method = "lm", se = FALSE) + 
   labs(title = "Log Antibody Levels Over Time Since Vaccination")
 ```
-
 ## GAM MODEL
 ```{r}
 #########################GAM MODEL#########################
 
 #converted some of the variables to factor for smoother flow
+
 training <- training %>% mutate(across(c(race, smoking, gender), as.factor))
 validation <- validation %>% mutate(across(c(race, smoking, gender), as.factor))
 dat2 <- dat2 %>% mutate(across(c(race, smoking, gender), as.factor))
 
-## GAM Model Specification
-gam_spec <- gen_additive_mod(
-  select_features = FALSE, 
-  adjust_deg_free = NULL   
-) %>%
-  set_mode("regression") %>%
-  set_engine("mgcv", method = "REML") 
+set.seed(2222)
+cv_folds <- vfold_cv(training, v = 10)
 
-## Fitting the GAM
-gam_fit <- gam_spec %>%
-  fit(log_antibody ~ s(age) + s(bmi) + s(time) + gender + race + smoking +
-        diabetes + hypertension + s(LDL),
-      data = training)
+fit_gam_fold <- function(split, id) {
+  train_data <- analysis(split)
+  val_data <- assessment(split)
+  model <- gam(log_antibody ~ s(age) + s(bmi) + s(time) + gender + race + smoking +diabetes + hypertension + s(LDL), data = train_data, method = "REML")
+  
+  val_data$.pred <- predict(model, newdata = val_data)
+  rmse_val <- yardstick::rmse(val_data, truth = log_antibody, estimate = .pred)$.estimate
+  rsq_val <- yardstick::rsq(val_data, truth = log_antibody, estimate = .pred)$.estimate
+  tibble(
+    fold = id,
+    model = list(model),
+    rmse = rmse_val,
+    rsq = rsq_val
+  )
+}
 
-## Predictions compared to the validation set 
-gam_preds <- predict(gam_fit, new_data = validation) %>%
-  bind_cols(validation)
+cv_model_results <- map2_dfr(cv_folds$splits, cv_folds$id, fit_gam_fold)
 
-#rmse and rsq for performance eval
-gam_rmse <- rmse(gam_preds, truth = log_antibody, estimate = .pred)
-gam_rsq <- rsq(gam_preds, truth = log_antibody, estimate = .pred)
-
-#summary
-summary(gam_fit$fit)
+best_model_row <- cv_model_results %>%
+  arrange(rmse) %>%
+  slice(1)
+best_gam_model <- best_model_row$model[[1]]
+best_model_row$rmse
+best_model_row$rsq
+summary(best_gam_model)
 
 #visual
-plot(gam_fit$fit, pages = 1)
+plot(best_gam_model, pages = 1)
 
-# Testing GAM model with the test data
-gam_test_pred = predict(gam_fit, new_data = initial_test)$.pred
-# Calculating RMSE of the test data
-gam_test_error = mean((gam_test_pred - initial_test$log_antibody)^2)
-gam_test_error # 0.287913
+dat2$.pred_gam <- predict(best_gam_model, newdata = dat2)
+
+# Evaluate performance
+rmse_gam_dat2 <- yardstick::rmse(dat2, truth = log_antibody, estimate = .pred_gam)
+rsq_gam_dat2 <- yardstick::rsq(dat2, truth = log_antibody, estimate = .pred_gam)
+
+print(rmse_gam_dat2)
+print(rsq_gam_dat2)
+
+
 ```
 
 ## MARS MODEL
